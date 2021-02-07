@@ -69,6 +69,14 @@ pub enum Error<Ecs, Espi> {
     PacketTooLarge,
 }
 
+pub enum PowerMode
+{
+	High,
+	Normal,
+	Low
+}
+
+
 /// Main struct to interact with RFM69 chip.
 pub struct Rfm69<T, S, D> {
     spi: S,
@@ -278,11 +286,6 @@ where
 		self.disable_high_power()?;
 
 		self.mode(Mode::Receiver)?;
-
-		// (taken from line 372 of RH_RF69.cpp, "Set interrupt line 0 PayloadReady")
-		//self.write(DioMapping1, 0x40);
-
-		self.wait_mode_ready()?;
 
 		while !self.is_packet_ready()? {}
 
