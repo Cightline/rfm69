@@ -304,7 +304,7 @@ where
 	{
 		match self.power_mode
 		{
-			// Keep whatever mode we have, we aren't worried about our power consumption.
+		    // Keep whatever mode we have, we aren't worried about our power consumption.
 			PowerMode::High   => { Ok(()) }
 			PowerMode::Normal => { self.mode(Mode::Standby) }
 			PowerMode::Low    => { self.mode(Mode::Sleep) }
