@@ -71,9 +71,9 @@ pub enum Error<Ecs, Espi> {
 
 pub enum PowerMode
 {
-	High,
-	Normal,
-	Low
+    High,
+    Normal,
+    Low
 }
 
 
@@ -85,8 +85,8 @@ pub struct Rfm69<T, S, D> {
     mode: Mode,
     dio: [Option<DioMapping>; 6],
     rssi: f32,
-	power_mode: PowerMode,
-	high_power_enabled: bool
+    power_mode: PowerMode,
+    high_power_enabled: bool
 }
 
 impl<T, S, D, Ecs, Espi> Rfm69<T, S, D>
@@ -105,8 +105,8 @@ where
             mode: Mode::Standby,
             dio: [None; 6],
             rssi: 0.0,
-	        power_mode: PowerMode::Normal,
-	        high_power_enabled: false
+            power_mode: PowerMode::Normal,
+            high_power_enabled: false
         }
     }
 
@@ -117,14 +117,14 @@ where
         Ok(buffer)
     }
 
-	/// There are 3 (programmatically defined) power modes; High, Normal. and Low.
-	/// Selecting High will not automatically switch the RFM69 modes (Standby, Sleep, Transmitter, Receiver) after transmitting or receiving.
-	/// Selecting Normal will revert the module to Standby after transmitting or receiving.
-	/// Selecting Low will revert the module to Sleep after transmitting or receiving.
-	pub fn power_mode(&mut self, power_mode: PowerMode) -> Result<(), Ecs, Espi> {
-		self.power_mode = power_mode;
-		self.check_power()
-	}
+    /// There are 3 (programmatically defined) power modes; High, Normal. and Low.
+    /// Selecting High will not automatically switch the RFM69 modes (Standby, Sleep, Transmitter, Receiver) after transmitting or receiving.
+    /// Selecting Normal will revert the module to Standby after transmitting or receiving.
+    /// Selecting Low will revert the module to Sleep after transmitting or receiving.
+    pub fn power_mode(&mut self, power_mode: PowerMode) -> Result<(), Ecs, Espi> {
+        self.power_mode = power_mode;
+        self.check_power()
+    }
 
     /// Sets the mode in corresponding register `RegOpMode (0x01)`.
     pub fn mode(&mut self, mode: Mode) -> Result<(), Ecs, Espi> {
@@ -132,12 +132,12 @@ where
         self.update(Registers::OpMode, |r| (r & 0xe3) | val)?;
         self.mode = mode;
         self.dio()?;
-	    self.wait_mode_ready()
+        self.wait_mode_ready()
     }
 
-	pub fn version(&mut self) -> Result<u8, Ecs, Espi> {
-		self.read(registers::Registers::Version)
-	}
+    pub fn version(&mut self) -> Result<u8, Ecs, Espi> {
+        self.read(registers::Registers::Version)
+    }
 
     /// Sets the modulation in corresponding register `RegDataModul (0x02)`.
     pub fn modulation(&mut self, modulation: Modulation) -> Result<(), Ecs, Espi> {
@@ -270,76 +270,76 @@ where
         self.rssi
     }
 
-	/// Receive bytes from another RFM69. This call blocks until there are any
+    /// Receive bytes from another RFM69. This call blocks until there are any
     /// bytes available. This can be combined with DIO interrupt for `PayloadReady`, calling
     /// `recv` immediately after the interrupt should not block.
-	pub fn recv(&mut self, buffer: &mut [u8]) -> Result<(), Ecs, Espi>
+    pub fn recv(&mut self, buffer: &mut [u8]) -> Result<(), Ecs, Espi>
     {
-		if buffer.is_empty() {
-			return Ok(());
-		}
+        if buffer.is_empty() {
+            return Ok(());
+        }
 
-		self.mode(Mode::Receiver)?;
+        self.mode(Mode::Receiver)?;
 
 
-		// High power must be disabled when receiving.
-		if self.high_power_enabled
-		{
-			self.disable_high_power()?;
-		}
+        // High power must be disabled when receiving.
+        if self.high_power_enabled
+        {
+            self.disable_high_power()?;
+        }
 
-		self.mode(Mode::Receiver)?;
+        self.mode(Mode::Receiver)?;
 
-		while !self.is_packet_ready()? {}
+        while !self.is_packet_ready()? {}
 
-		self.mode(Mode::Standby)?;
-		self.read_many(Registers::Fifo, buffer)?;
-		self.rssi = self.read(Registers::RssiValue)? as f32 / -2.0;
-		Ok(())
-	}
+        self.mode(Mode::Standby)?;
+        self.read_many(Registers::Fifo, buffer)?;
+        self.rssi = self.read(Registers::RssiValue)? as f32 / -2.0;
+        Ok(())
+    }
 
-	/// Reverts the power back to standby or sleep depending on the previously set PowerMode.
-	/// If the PowerMode is set to High, it will not make any changes so the user can transmit or receive
-	/// without waiting for a mode change.
-	pub fn check_power(&mut self) -> Result<(), Ecs, Espi>
-	{
-		match self.power_mode
-		{
-		    // Keep whatever mode we have, we aren't worried about our power consumption.
-			PowerMode::High   => { Ok(()) }
-			PowerMode::Normal => { self.mode(Mode::Standby) }
-			PowerMode::Low    => { self.mode(Mode::Sleep) }
-		}
-	}
+    /// Reverts the power back to standby or sleep depending on the previously set PowerMode.
+    /// If the PowerMode is set to High, it will not make any changes so the user can transmit or receive
+    /// without waiting for a mode change.
+    pub fn check_power(&mut self) -> Result<(), Ecs, Espi>
+    {
+        match self.power_mode
+        {
+            // Keep whatever mode we have, we aren't worried about our power consumption.
+            PowerMode::High   => { Ok(()) }
+            PowerMode::Normal => { self.mode(Mode::Standby) }
+            PowerMode::Low    => { self.mode(Mode::Sleep) }
+        }
+    }
 
-	fn enable_high_power(&mut self) -> Result<(), Ecs, Espi>
-	{
-		// Datasheet:
-		// To ensure correct operation at the highest power levels, please make sure to adjust the Over Current Protection
-		// Limit accordingly in RegOcp, except above +18dBm where it must be disabled
+    fn enable_high_power(&mut self) -> Result<(), Ecs, Espi>
+    {
+        // Datasheet:
+        // To ensure correct operation at the highest power levels, please make sure to adjust the Over Current Protection
+        // Limit accordingly in RegOcp, except above +18dBm where it must be disabled
 
-		self.write(Registers::Ocp, 0x0F)?;
-		self.pa13_dbm1(registers::Pa13dBm1::High20dBm)?;
-		self.pa13_dbm2(registers::Pa13dBm2::High20dBm)?;
+        self.write(Registers::Ocp, 0x0F)?;
+        self.pa13_dbm1(registers::Pa13dBm1::High20dBm)?;
+        self.pa13_dbm2(registers::Pa13dBm2::High20dBm)?;
 
-		self.high_power_enabled = true;
+        self.high_power_enabled = true;
 
-		Ok(())
-	}
+        Ok(())
+    }
 
-	fn disable_high_power(&mut self) -> Result<(), Ecs, Espi>
-	{
-		// The datasheet has an incorrect hex I think (0x1x), but
-		// line 165 in RH_RF69.h from RadioHead has PA0ON as 0x80.
+    fn disable_high_power(&mut self) -> Result<(), Ecs, Espi>
+    {
+        // The datasheet has an incorrect hex I think (0x1x), but
+        // line 165 in RH_RF69.h from RadioHead has PA0ON as 0x80.
 
-		self.write(Registers::Ocp, 0x80)?;
-		self.pa13_dbm1(registers::Pa13dBm1::Normal)?;
-		self.pa13_dbm2(registers::Pa13dBm2::Normal)?;
+        self.write(Registers::Ocp, 0x80)?;
+        self.pa13_dbm1(registers::Pa13dBm1::Normal)?;
+        self.pa13_dbm2(registers::Pa13dBm2::Normal)?;
 
-		self.high_power_enabled = false;
+        self.high_power_enabled = false;
 
-		Ok(())
-	}
+        Ok(())
+    }
 
     /// Receive bytes from another RFM69. This call blocks until there are any
     /// bytes available. This can be combined with DIO interrupt for `SyncAddressMatch`, calling
@@ -380,33 +380,33 @@ where
         Ok(len)
     }
 
-	/// Send bytes to another RFM69. This can block until all data are send.
-	pub fn send(&mut self, buffer: &mut [u8]) -> Result<(), Ecs, Espi>
-	{
-		if buffer.is_empty() { return Ok(()); }
+    /// Send bytes to another RFM69. This can block until all data are send.
+    pub fn send(&mut self, buffer: &mut [u8]) -> Result<(), Ecs, Espi>
+    {
+        if buffer.is_empty() { return Ok(()); }
 
-		match self.power_mode
-		{
-			PowerMode::High =>
-			{
-				if !self.high_power_enabled { self.enable_high_power()?; }
-			}
+        match self.power_mode
+        {
+            PowerMode::High =>
+            {
+                if !self.high_power_enabled { self.enable_high_power()?; }
+            }
 
-			PowerMode::Normal | PowerMode::Low =>
-			{
-				if self.high_power_enabled { self.disable_high_power()? }
-			}
-		}
+            PowerMode::Normal | PowerMode::Low =>
+            {
+                if self.high_power_enabled { self.disable_high_power()? }
+            }
+        }
 
-		self.reset_fifo()?;
-		self.write_many(Registers::Fifo, buffer)?;
-		self.mode(Mode::Transmitter)?;
-		self.wait_packet_sent()?;
+        self.reset_fifo()?;
+        self.write_many(Registers::Fifo, buffer)?;
+        self.mode(Mode::Transmitter)?;
+        self.wait_packet_sent()?;
 
-		// We're in transmitter mode, check to see if we should revert to
-		// a different mode now that the message has been sent.
-		self.check_power()
-	}
+        // We're in transmitter mode, check to see if we should revert to
+        // a different mode now that the message has been sent.
+        self.check_power()
+    }
 
     /// Send bytes to another RFM69. This will block until all data are send.
     /// This function is designed to send packets larger than the FIFO size by writing data as
