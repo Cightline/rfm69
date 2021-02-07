@@ -273,7 +273,8 @@ where
 	/// Receive bytes from another RFM69. This call blocks until there are any
     /// bytes available. This can be combined with DIO interrupt for `PayloadReady`, calling
     /// `recv` immediately after the interrupt should not block.
-	pub fn recv(&mut self, buffer: &mut [u8]) -> Result<(), Ecs, Espi> {
+	pub fn recv(&mut self, buffer: &mut [u8]) -> Result<(), Ecs, Espi>
+    {
 		if buffer.is_empty() {
 			return Ok(());
 		}
