@@ -135,6 +135,10 @@ where
 	    self.wait_mode_ready()
     }
 
+	pub fn version(&mut self) -> Result<u8, Ecs, Espi> {
+		self.read(registers::Registers::Version)
+	}
+
     /// Sets the modulation in corresponding register `RegDataModul (0x02)`.
     pub fn modulation(&mut self, modulation: Modulation) -> Result<(), Ecs, Espi> {
         self.write(Registers::DataModul, modulation.value())
@@ -276,14 +280,12 @@ where
 
 		self.mode(Mode::Receiver)?;
 
-		while !self.is_packet_ready()? {}
 
 		// High power must be disabled when receiving.
 		if self.high_power_enabled
 		{
 			self.disable_high_power()?;
 		}
-		self.disable_high_power()?;
 
 		self.mode(Mode::Receiver)?;
 
@@ -386,18 +388,12 @@ where
 		{
 			PowerMode::High =>
 			{
-				if !self.high_power_enabled
-				{
-					self.enable_high_power()?;
-				}
+				if !self.high_power_enabled { self.enable_high_power()?; }
 			}
 
 			PowerMode::Normal | PowerMode::Low =>
 			{
-				if self.high_power_enabled
-				{
-					self.disable_high_power()?
-				}
+				if self.high_power_enabled { self.disable_high_power()? }
 			}
 		}
 
@@ -408,7 +404,6 @@ where
 
 		// We're in transmitter mode, check to see if we should revert to
 		// a different mode now that the message has been sent.
-
 		self.check_power()
 	}
 
