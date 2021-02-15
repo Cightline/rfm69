@@ -680,3 +680,6 @@ where
 
 #[cfg(test)]
 mod tests;
+#[cfg(packet)]
+mod packet;
+

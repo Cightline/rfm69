@@ -13,6 +13,12 @@ description = "A generic rust driver to support RFM69 family wireless chips"
 
 [dependencies]
 embedded-hal = "0.2"
+staticvec = { version = "0.10.5", optional = true }
 
 [dev-dependencies]
 linux-embedded-hal = "0.3"
+
+
+[features]
+default = []
+packet = ['staticvec']
