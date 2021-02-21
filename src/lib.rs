@@ -680,6 +680,7 @@ where
 
 #[cfg(test)]
 mod tests;
-#[cfg(packet)]
-mod packet;
+
+#[cfg(feature = "packet")]
+pub mod packet;
 
